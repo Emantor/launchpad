@@ -5,7 +5,7 @@ import midi.sequencer as sequencer
 
 class IO:
   
-  COLOR = {"a" : 63, "g" : 60, "y" : 62, "f" : 28, "e" : 13, "o" : 47, "r" : 15, "o" : 12}
+  COLOR = {"a" : 63,"s" : 41, "g" : 60, "y" : 62, "f" : 28, "e" : 13, "o" : 47, "r" : 15, "o" : 12}
   invCOLOR = {v:k for k, v in COLOR.items()}
 
   persistentButtonState = [[12]*9,
@@ -121,9 +121,11 @@ class IO:
         button = event.control - 104
         if lightup and event.value == 127:
           self.__TopButtonCmd(button,True,self.COLOR[lightcolor])
+          pressed = True
         elif lightup and event.value == 0:
           self.__TopButtonCmd(button,False)
-        return button
+          pressed = False
+        return button,pressed
       else:
         return 'unknown'
 
@@ -140,7 +142,7 @@ class IO:
     self.seq.event_write(command,True)
 
   def topButtonOn(self,x,color="a"):
-    self.__TopButtonCmd(x,True,self.COLOR[color],True)
+    self.__TopButtonCmd(x,True,self.COLOR[color])
 
   def topButtonOff(self,x,color="a"):
     self.__TopButtonCmd(x,False)
@@ -202,12 +204,25 @@ class IO:
     command = midi.ControlChangeEvent()
     command.control = 0
     command.value = 0
+    k = 0
+    for i in self.persistentButtonState:
+      l = 0
+      for j in self.persistentButtonState[k]:
+        self.persistentButtonState[k][l] = 12
+        l += 1
+      k += 1
     self.seq.event_write(command,True)
 
   def flashOn(self):
     command = midi.ControlChangeEvent()
     command.control = 0
     command.value = 40
+    self.seq.event_write(command,True)
+
+  def ledHigh(self):
+    command = midi.ControlChangeEvent()
+    command.control = 30
+    command.value = 0
     self.seq.event_write(command,True)
 
   def randScreen(self):
