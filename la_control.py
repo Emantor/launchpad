@@ -21,46 +21,63 @@ l.ledHigh()
 
 tick = 0
 
-XBMCHosts = ["bibliothekar"]
+XBMCHosts = ["minibox.local"]
 XBMCHost = []
 
-MPDHosts = ["localhost","bibliothekar"]
+MPDHosts = ["localhost"]
 MPDHost = []
 
 state = "MPD"
 l.topButtonOn(0,'g')
 l.topButtonOn(1,'a')
 
-def connectMPD():
-  j = 0
-  for i in MPDHosts:
+def connectMPD(Host):
     MPDHost.append(MPDClient())
     try:
-      MPDHost[j].timeout = 12000
-      MPDHost[j].connect(i,6600)
-      l.rightButtonOn(int(j*2),'g')
+      MPDHost[Host].timeout = 12000
+      MPDHost[Host].connect(MPDHosts[Host],6600)
+      l.rightButtonOn(int(Host*2),'g')
     except:
       print "No Connection"
-      l.rightButtonOn(int(j*2),'r')
-    j = j + 1
+      MPDHost.pop()
+      l.rightButtonOn(int(Host*2),'r')
 
-def connectXBMC():
-  j = 0
-  for i in XBMCHosts:
+def connectXBMC(Host):
     try:
-      XBMCHost.append(XBMC("http://" + XBMCHosts[j] + ":8080/jsonrpc"))
-      l.rightButtonOn(int(j*2),'g')
+      XBMCHost.append(XBMC("http://" + XBMCHosts[Host] + ":8080/jsonrpc"))
+      l.rightButtonOn(int(Host*2),'g')
     except:
       print "No Connection"
-      l.rightButtonOn(int(j*2),'r')
-    j = j + 1
+      l.rightButtonOn(int(Host*2),'r')
 
 
-connectMPD()
-connectXBMC()
+for position,item in enumerate(MPDHosts):
+  print position
+  connectMPD(position)
+
 
 numberOfHosts = len(MPDHost)
 
+
+def tryXBMC(func):
+    def catchXBMC(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except:
+            print "XBMC not Connected"
+    return catchXBMC
+
+def tryMPD(func):
+    def catchMPD(*args, **kwargs):
+        Host = args[1]/2
+        try:
+            return func(*args, **kwargs)
+        except:
+            l.rightButtonOn(int(Host*2),'r')
+            print "MPD not connected"
+    return catchMPD
+
+@tryMPD
 def decrementVol(x,y):
   Host = y/2
   status = MPDHost[Host].status()
@@ -70,6 +87,7 @@ def decrementVol(x,y):
   status = MPDHost[Host].status()
   displayMPDVolumeBar(status,Host*2+1)
 
+@tryMPD
 def incrementVol(x,y):
   Host = y/2
   status = MPDHost[Host].status()
@@ -79,9 +97,13 @@ def incrementVol(x,y):
   status = MPDHost[Host].status()
   displayMPDVolumeBar(status,Host*2+1)
 
+@tryMPD
 def setVol(x,y):
   Host = y/2
-  pass  
+  volume = int(x*12.5+12.5)
+  MPDHost[Host].setvol(volume)
+  status = MPDHost[Host].status()
+  displayMPDVolumeBar(status,Host*2+1)
 
 def displayMPDVolumeBar(status,offset):
   volbutton = int(int(status['volume'])/12.5)
@@ -105,6 +127,7 @@ def displayMPDPeriodic():
     displayMPDVolumeBar(status,2*Hostnumber+1)
     Hostnumber = Hostnumber + 1
 
+@tryMPD
 def MPDtoggle(x,y):
   Host = y/2
   status = MPDHost[Host].status()
@@ -115,10 +138,12 @@ def MPDtoggle(x,y):
     MPDHost[Host].play()
     l.gridButtonOn(1,Host*2,'f')
 
+@tryMPD
 def MPDnext(x,y):
   Host = y/2
   MPDHost[Host].next()
 
+@tryMPD
 def MPDprevious(x,y):
   Host = y/2
   MPDHost[Host].previous()
@@ -127,6 +152,7 @@ def exitProg(x,y):
   l.clear()
   quit()
 
+@tryXBMC
 def displayXBMCPeriodic():
   displayXBMCStatus()
   Hostnumber = 0
@@ -134,6 +160,7 @@ def displayXBMCPeriodic():
     status = MPDHost[Hostnumber].status()
     Hostnumber = Hostnumber + 1
 
+@tryXBMC
 def displayXBMCStatus():
   l.gridButtonOn(0,0,'f')
   l.gridButtonOn(1,0,'e')
@@ -150,42 +177,55 @@ def displayXBMCStatus():
   l.gridButtonOn(3,3,'s')
   
 
+@tryXBMC
 def XBMCDown(x,y):
   XBMCHost[0].Input.Down()
 
+@tryXBMC
 def XBMCUp(x,y):
   XBMCHost[0].Input.Up()
 
+@tryXBMC
 def XBMCRight(x,y):
   XBMCHost[0].Input.Right()
 
+@tryXBMC
 def XBMCLeft(x,y):
   XBMCHost[0].Input.Left()
 
+@tryXBMC
 def XBMCSelect(x,y):
   XBMCHost[0].Input.Select()
 
+@tryXBMC
 def XBMCBack(x,y):
   XBMCHost[0].Input.Back()
 
+@tryXBMC
 def XBMCTitle(x,y):
   XBMCHost[0].Input.ExecuteAction(action='title')
 
+@tryXBMC
 def XBMCMenu(x,y):
   XBMCHost[0].Input.ExecuteAction(action="osd")
 
+@tryXBMC
 def XBMCInfo(x,y):
   XBMCHost[0].Input.Info()
 
+@tryXBMC
 def XBMCPrevious(x,y):
   XBMCHost[0].Input.ExecuteAction(action='previous')
 
+@tryXBMC
 def XBMCToggle(x,y):
   XBMCHost[0].Input.ExecuteAction(action='playpause')
 
+@tryXBMC
 def XBMCNext(x,y):
   XBMCHost[0].Input.ExecuteAction(action='next')
 
+@tryXBMC
 def XBMCStop(x,y):
   XBMCHost[0].Input.ExecuteAction(action='stop')
 
@@ -194,7 +234,6 @@ def generateMPDKeyBindings():
   for i in range(0,numberOfHosts*2):
     xbinding = 0
     Host = int(i / 2)
-    print Host
     if i % 2 == 0:
       dictKeyBindings[(xbinding,i,True)] = MPDprevious
       xbinding += 1
@@ -257,9 +296,6 @@ dictMPDKeyBindings = generateMPDKeyBindings()
 
 dictXBMCKeyBindings = {}
 dictXBMCKeyBindings = generateXBMCKeyBindings()
-
-print dictXBMCKeyBindings
-print dictMPDKeyBindings
 
 while True:
   if tick == 25:
