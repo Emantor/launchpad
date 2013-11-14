@@ -104,7 +104,7 @@ class IO:
       button.velocity = self.persistentButtonState[y][x]
     self.seq.event_write(button,True)
 
-  def __ButtonRecv(self,lightup=True,lightcolor="a"):
+  def ButtonRecv(self,lightup=True,lightcolor="a"):
     event = self.seq.event_read()
     if event is not None:
       if hasattr(event, 'pitch'):
